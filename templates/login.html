@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+/* ── Login card: light mode ─────────────────────────── */
+.login-card .card-header {
+    background-color: #ffffff;
+    color: #212529;
+}
+.login-card .card-body {
+    background-color: #ffffff;
+    color: #212529;
+}
+.login-card label {
+    color: #495057;
+}
+.login-card .text-muted {
+    color: #6c757d !important;
+}
+
+/* ── Login card: dark mode ──────────────────────────── */
+[data-bs-theme="dark"] .login-card .card-header {
+    background-color: #1e2530 !important;
+    color: #e2e8f0 !important;
+    border-bottom-color: #2d3748 !important;
+}
+[data-bs-theme="dark"] .login-card .card-body {
+    background-color: #1e2530 !important;
+    color: #e2e8f0 !important;
+}
+[data-bs-theme="dark"] .login-card .card {
+    border-color: #2d3748 !important;
+    background-color: #1e2530 !important;
+}
+[data-bs-theme="dark"] .login-card label {
+    color: #cbd5e1 !important;
+}
+[data-bs-theme="dark"] .login-card .text-muted {
+    color: #94a3b8 !important;
+}
+[data-bs-theme="dark"] .login-card .form-control {
+    background-color: #0f172a;
+    border-color: #334155;
+    color: #e2e8f0;
+}
+[data-bs-theme="dark"] .login-card .form-control::placeholder {
+    color: #64748b;
+}
+[data-bs-theme="dark"] .login-card .form-control:focus {
+    background-color: #0f172a;
+    border-color: #3b82f6;
+    color: #e2e8f0;
+    box-shadow: 0 0 0 0.2rem rgba(59,130,246,0.25);
+}
+[data-bs-theme="dark"] .login-card .form-check-input {
+    background-color: #0f172a;
+    border-color: #334155;
+}
+[data-bs-theme="dark"] .login-card small {
+    color: #94a3b8;
+}
+[data-bs-theme="dark"] .login-card small a {
+    color: #60a5fa;
+}
+
+
+</style>
+
+<div class="row justify-content-center mt-5">
+<div class="col-md-5 col-lg-4 login-card">
+        <div class="card shadow-sm">
+            <div class="card-header text-center">
+                <h3 class="mb-1">Login</h3>
+                <small class="text-muted d-block mt-2 font-italic">Secure Life with Secure Scanning</small>
+            </div>
+            <div class="card-body">
+                <form id="loginForm">
+                    <div class="mb-3">
+                        <label>Email</label>
+                        <input type="email" id="email" class="form-control" placeholder="your@email.com" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>Password</label>
+                        <input type="password" id="password" class="form-control" placeholder="********" required>
+                    </div>
+                    <div class="d-flex justify-content-between mb-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="rememberMe">
+                            <label class="form-check-label text-muted small" for="rememberMe">
+                                Remember me
+                            </label>
+                        </div>
+                        <a href="#" class="text-decoration-none small" data-bs-toggle="modal" data-bs-target="#forgotPasswordModal">Forgot password?</a>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Sign In</button>
+                    <div class="text-center mt-3">
+                        <small>Don't have an account? <a href="/auth/register">Sign up</a></small>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Forgot Password Modal (3-Step) ===== -->
+<div class="modal fade" id="forgotPasswordModal" tabindex="-1" aria-labelledby="forgotPasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+
+            <!-- Step 1: Enter Email -->
+            <div id="fp-step1">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="forgotPasswordModalLabel">
+                        <i class="fa fa-lock-open me-2"></i>Reset Password &mdash; Step 1 of 3
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 text-center">
+                    <i class="fa fa-envelope fa-3x text-primary mb-3"></i>
+                    <p class="text-muted mb-4">Enter your registered email address to begin the reset process.</p>
+                    <input type="email" id="fp-email" class="form-control text-center mb-3" placeholder="your@email.com">
+                    <div id="fp-step1-error" class="text-danger small mb-2 d-none"></div>
+                    <button class="btn btn-primary w-100" onclick="fpStep1Next()">
+                        <i class="fa fa-arrow-right me-2"></i>Continue
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 2: Enter Google Authenticator Code -->
+            <div id="fp-step2" class="d-none">
+                <div class="modal-header text-dark" style="background-color:#ffc107;">
+                    <h5 class="modal-title">
+                        <i class="fa fa-mobile-screen me-2"></i>Reset Password &mdash; Step 2 of 3
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 text-center">
+                    <i class="fa fa-shield-halved fa-3x text-warning mb-3"></i>
+                    <p class="text-muted mb-1">Open <strong>Google Authenticator</strong> and enter your 6-digit code.</p>
+                    <p class="small text-muted mb-4">This confirms it's really you.</p>
+                    <input type="text" id="fp-otp" class="form-control text-center fs-3 mb-3" placeholder="000000" maxlength="6" style="letter-spacing:10px;">
+                    <div id="fp-step2-error" class="text-danger small mb-2 d-none"></div>
+                    <button class="btn btn-warning text-dark fw-bold w-100" onclick="fpStep2Verify()">
+                        <i class="fa fa-check-circle me-2"></i>Verify Identity
+                    </button>
+                    <button class="btn btn-link text-muted small mt-2" onclick="fpGoTo(1)">&#8592; Back</button>
+                </div>
+            </div>
+
+            <!-- Step 3: Set New Password -->
+            <div id="fp-step3" class="d-none">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">
+                        <i class="fa fa-key me-2"></i>Reset Password &mdash; Step 3 of 3
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 text-center">
+                    <i class="fa fa-lock fa-3x text-success mb-3"></i>
+                    <p class="text-muted mb-4">Identity verified! Create your new password.</p>
+                    <input type="password" id="fp-new-password" class="form-control mb-2" placeholder="New password (min 6 chars)">
+                    <input type="password" id="fp-confirm-password" class="form-control mb-3" placeholder="Confirm new password">
+                    <div id="fp-step3-error" class="text-danger small mb-2 d-none"></div>
+                    <button class="btn btn-success fw-bold w-100" onclick="fpStep3Reset()">
+                        <i class="fa fa-check me-2"></i>Reset Password
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 4: Success -->
+            <div id="fp-step4" class="d-none">
+                <div class="modal-header bg-success text-white border-0">
+                    <h5 class="modal-title"><i class="fa fa-circle-check me-2"></i>Password Reset!</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 text-center">
+                    <i class="fa fa-circle-check fa-4x text-success mb-3"></i>
+                    <h5 class="fw-bold">All done!</h5>
+                    <p class="text-muted">Your password has been reset successfully. You can now sign in with your new password.</p>
+                    <button class="btn btn-success w-100" data-bs-dismiss="modal">
+                        <i class="fa fa-sign-in me-2"></i>Back to Login
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Login form
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const em = document.getElementById('email').value;
+        const p  = document.getElementById('password').value;
+        try {
+            const res  = await fetch('/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: em, password: p })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                localStorage.setItem('token', data.access_token);
+                localStorage.setItem('role', data.role);
+                showToast('Logged in successfully!', 'success', 'check-circle');
+                window.location.href = data.role === 'admin' ? '/admin/dashboard' : '/dashboard';
+            } else {
+                showAlert(data.msg);
+            }
+        } catch (err) {
+            showAlert('Network error occurred.');
+        }
+    });
+
+    // ===== Forgot Password Flow =====
+    let fpResetToken = null;
+    const fpSteps    = ['fp-step1','fp-step2','fp-step3','fp-step4'];
+
+    function fpGoTo(stepNum) {
+        fpSteps.forEach((id, i) =>
+            document.getElementById(id).classList.toggle('d-none', i !== stepNum - 1)
+        );
+    }
+
+    function resetForgotModal() {
+        fpResetToken = null;
+        fpGoTo(1);
+        ['fp-email','fp-otp','fp-new-password','fp-confirm-password'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+        ['fp-step1-error','fp-step2-error','fp-step3-error'].forEach(id => {
+            const el = document.getElementById(id);
+            el.textContent = '';
+            el.classList.add('d-none');
+        });
+    }
+
+    function fpShowError(errorId, msg) {
+        const el = document.getElementById(errorId);
+        el.textContent = msg;
+        el.classList.remove('d-none');
+    }
+
+    function fpStep1Next() {
+        const email = document.getElementById('fp-email').value.trim();
+        document.getElementById('fp-step1-error').classList.add('d-none');
+        if (!email) { fpShowError('fp-step1-error', 'Please enter your email.'); return; }
+        fpGoTo(2);
+        document.getElementById('fp-otp').focus();
+    }
+
+    async function fpStep2Verify() {
+        const email = document.getElementById('fp-email').value.trim();
+        const otp   = document.getElementById('fp-otp').value.trim();
+        document.getElementById('fp-step2-error').classList.add('d-none');
+        if (!otp || otp.length !== 6) { fpShowError('fp-step2-error', 'Enter your 6-digit code.'); return; }
+        try {
+            const res  = await fetch('/auth/verify-identity', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, otp })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                fpResetToken = data.reset_token;
+                fpGoTo(3);
+                document.getElementById('fp-new-password').focus();
+            } else {
+                fpShowError('fp-step2-error', data.msg);
+            }
+        } catch (err) {
+            fpShowError('fp-step2-error', 'Network error. Please check your connection.');
+        }
+    }
+
+    async function fpStep3Reset() {
+        const newPw  = document.getElementById('fp-new-password').value;
+        const confPw = document.getElementById('fp-confirm-password').value;
+        document.getElementById('fp-step3-error').classList.add('d-none');
+        if (!newPw || newPw.length < 6) { fpShowError('fp-step3-error', 'Password must be at least 6 characters.'); return; }
+        if (newPw !== confPw)            { fpShowError('fp-step3-error', 'Passwords do not match.'); return; }
+        try {
+            const res  = await fetch('/auth/reset-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reset_token: fpResetToken, new_password: newPw })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                fpGoTo(4);
+            } else {
+                fpShowError('fp-step3-error', data.msg);
+            }
+        } catch (err) {
+            fpShowError('fp-step3-error', 'Network error. Please check your connection.');
+        }
+    }
+
+    // Auto-reset modal when it closes
+    document.getElementById('forgotPasswordModal').addEventListener('hidden.bs.modal', resetForgotModal);
+</script>
+{% endblock %}

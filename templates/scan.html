@@ -1,0 +1,412 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row mt-4 mb-5">
+    <!-- Sidebar -->
+    <div class="col-md-3 d-none d-md-block">
+        <div class="list-group shadow-sm">
+            <div class="list-group-item bg-primary text-white py-3">
+                <h5 class="mb-0"><i class="fa fa-shield-halved"></i> QR Scanner</h5>
+            </div>
+            <a href="/dashboard" class="list-group-item list-group-item-action"><i class="fa fa-border-all me-2"></i> Dashboard</a>
+            <a href="/scanner/" class="list-group-item list-group-item-action active"><i class="fa fa-qrcode me-2"></i> QR Scan</a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-md-9">
+        <div class="card shadow-sm border-0 bg-white p-4">
+            <h6 class="mb-3 fw-bold text-dark">Scan Method</h6>
+
+            <ul class="nav nav-pills nav-justified mb-4" id="scanTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link rounded-start border bg-light text-dark fw-bold" id="upload-tab" data-bs-toggle="pill" data-bs-target="#upload" type="button" role="tab" aria-controls="upload" aria-selected="false"><i class="fa-solid fa-upload me-2"></i> Upload</button>
+                </li>
+                <!-- Default Active on Mobile -->
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active border-top border-bottom rounded-0 bg-white text-primary fw-bold" id="camera-tab" data-bs-toggle="pill" data-bs-target="#camera" type="button" role="tab" aria-controls="camera" aria-selected="true"><i class="fa-solid fa-camera me-2"></i> Use Camera</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link rounded-end border bg-light text-dark fw-bold" id="url-tab" data-bs-toggle="pill" data-bs-target="#url" type="button" role="tab" aria-controls="url" aria-selected="false"><i class="fa-solid fa-link me-2"></i> Paste URL</button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="scanTabsContent">
+                <!-- Upload Tab -->
+                <div class="tab-pane fade" id="upload" role="tabpanel" aria-labelledby="upload-tab">
+                    <form id="uploadForm" onsubmit="handleImageUpload(event)">
+                        <div class="border border-2 border-dashed rounded bg-light text-center p-5 mb-4 position-relative" style="border-style: dashed !important; border-color: #dee2e6 !important;">
+                            <input class="form-control position-absolute w-100 h-100 top-0 start-0 opacity-0" type="file" id="qr_image_input" accept="image/*" required style="cursor: pointer;">
+                            <i class="fa-solid fa-upload fa-3x text-primary mb-3"></i>
+                            <h5 class="text-primary fw-bold">Click to upload</h5>
+                            <div id="file-name" class="mt-2 text-success fw-bold d-none"></div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100" id="btn-upload-scan">Scan for Threats</button>
+                    </form>
+                </div>
+
+                <!-- Camera Tab (Default Active) -->
+                <div class="tab-pane fade show active" id="camera" role="tabpanel" aria-labelledby="camera-tab">
+                    <div class="border rounded bg-light p-4 mb-4 text-center">
+                        <div id="camera-ui">
+                            <i class="fa-solid fa-camera fa-4x text-secondary mb-3"></i>
+                            <h5>Live Mobile Scanner</h5>
+                            <button id="btn-start-scanner" type="button" class="btn btn-primary mt-3 px-4 py-2 fw-bold" onclick="startMobileScanner()">
+                                <i class="fa fa-video me-2"></i> Start Scanner
+                            </button>
+                        </div>
+
+                        <div id="video-container" style="display: none; position: relative;">
+                            <!-- Strict iOS/Android autoplay required properties inline -->
+                            <video id="qr-video" style="width: 100%; max-width: 400px; border-radius: 8px; background: #000;" playsinline autoplay muted></video>
+                            <canvas id="qr-canvas" style="display: none;"></canvas>
+                            
+                            <div id="scan-indicator" class="mt-3 text-primary">
+                                <div class="spinner-border spinner-border-sm" role="status"></div>
+                                <span class="ms-2 fw-bold" id="scan-status-text">Locating QR code...</span>
+                            </div>
+                            <button type="button" class="btn btn-danger mt-3 w-100" onclick="stopMobileScanner()">Cancel Scan</button>
+                        </div>
+                        
+                        <div id="camera-error" class="alert alert-danger mt-3 d-none text-start"></div>
+
+                        <form id="cameraForm" action="/scanner/process_url" method="POST" class="d-none">
+                            <input type="hidden" name="scanned_url" id="scanned_url">
+                        </form>
+                    </div>
+                </div>
+
+            <!-- URL Tab -->
+                <div class="tab-pane fade" id="url" role="tabpanel" aria-labelledby="url-tab">
+                    <form id="urlForm" action="/scanner/process_url" method="POST">
+                        <div class="border rounded bg-light p-5 mb-4 text-center">
+                            <input type="url" name="scanned_url" class="form-control form-control-lg text-center" placeholder="https://example.com" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Scan for Threats</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Global Scanning Loader Overlay -->
+<div id="global-loader" class="d-none position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-75" style="z-index: 1050; backdrop-filter: blur(4px);">
+    <div class="d-flex flex-column justify-content-center align-items-center h-100 text-white">
+        <div class="spinner-border text-primary" style="width: 4rem; height: 4rem; border-width: 0.35em;" role="status"></div>
+        <h4 class="mt-4 fw-bold" id="loader-title">Scanning Target...</h4>
+        <p class="text-white-50" id="loader-subtitle">Establishing connection</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script>
+    // Safe tab styling
+    document.querySelectorAll('.nav-link').forEach(function(tab) {
+        tab.addEventListener('shown.bs.tab', function (e) {
+            document.querySelectorAll('.nav-link').forEach(function(t) {
+                t.classList.remove('text-primary');
+                t.classList.add('text-dark', 'bg-light');
+            });
+            e.target.classList.remove('text-dark', 'bg-light');
+            e.target.classList.add('text-primary', 'bg-white');
+        });
+    });
+
+    const activeLink = document.querySelector('.nav-link.active');
+    if (activeLink) {
+        activeLink.classList.remove('text-dark', 'bg-light');
+        activeLink.classList.add('text-primary', 'bg-white');
+    }
+
+    const fileInput = document.getElementById('qr_image_input');
+    if (fileInput) {
+        fileInput.addEventListener('change', function (e) {
+            if (e.target.files.length > 0) {
+                const fileName = document.getElementById('file-name');
+                fileName.textContent = 'Selected file: ' + e.target.files[0].name;
+                fileName.classList.remove('d-none');
+            }
+        });
+    }
+
+    // Unified Image Upload Handler - Bypasses weak backend cv2 with robust jsQR
+    function handleImageUpload(e) {
+        e.preventDefault();
+        const file = document.getElementById('qr_image_input').files[0];
+        if (!file) return;
+        
+        const btn = document.getElementById('btn-upload-scan');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin me-2"></i> Scanning Image...';
+        btn.disabled = true;
+
+        const img = new Image();
+        const reader = new FileReader();
+
+        reader.onload = function(event) {
+            img.onload = function() {
+                const canvas = document.createElement("canvas");
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                // jsQR is exponentially more powerful than cv2.QRCodeDetector for static images
+                const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                    inversionAttempts: "attemptBoth", // crucial for inverted QR detection
+                });
+
+                if (code && code.data) {
+                    // Success! Piggyback onto the unified camera processing form
+                    document.getElementById('scanned_url').value = code.data;
+                    document.getElementById('cameraForm').submit();
+                } else {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    if (typeof showAlert === 'function') {
+                        showAlert("Could not detect a valid QR code in this image. Ensure the image is clear and contains a standard QR pattern.", "danger");
+                    } else {
+                        alert("Could not detect a QR code in this image.");
+                    }
+                }
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // Camera Logic
+    var scannerStream = null;
+    var scanAnimationFrame = null;
+
+    function stopMobileScanner() {
+        if (scanAnimationFrame) { cancelAnimationFrame(scanAnimationFrame); scanAnimationFrame = null; }
+        if (scannerStream) { 
+            scannerStream.getTracks().forEach(function(track) { track.stop(); }); 
+            scannerStream = null; 
+        }
+        document.getElementById('video-container').style.display = 'none';
+        document.getElementById('camera-ui').style.display = 'block';
+        document.getElementById('camera-error').classList.add('d-none');
+    }
+
+    async function startMobileScanner() {
+        const errorDiv = document.getElementById('camera-error');
+        const btn = document.getElementById('btn-start-scanner');
+        const originalBtnHTML = btn.innerHTML;
+        
+        errorDiv.classList.add('d-none');
+        btn.innerHTML = 'Requesting Permission...';
+        btn.disabled = true;
+
+        if (!window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+            btn.innerHTML = originalBtnHTML; btn.disabled = false;
+            showError("Camera requires a secure HTTPS connection.");
+            return;
+        }
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            btn.innerHTML = originalBtnHTML; btn.disabled = false;
+            showError("Your browser blocks camera access. Try Chrome or Safari directly.");
+            return;
+        }
+
+        try {
+            scannerStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: { ideal: "environment" } }
+            });
+
+            const video = document.getElementById('qr-video');
+            video.srcObject = scannerStream;
+            
+            // Strictly enforce iOS properties using Strings to be fully compatible
+            video.setAttribute("playsinline", "playsinline");
+            video.setAttribute("autoplay", "autoplay");
+            video.setAttribute("muted", "muted");
+            video.playsInline = true;
+            video.autoplay = true;
+            video.muted = true;
+
+            document.getElementById('camera-ui').style.display = 'none';
+            document.getElementById('video-container').style.display = 'block';
+
+            var playPromise = video.play();
+            if (playPromise !== undefined) {
+                playPromise.then(function() {
+                    btn.innerHTML = originalBtnHTML; btn.disabled = false;
+                    requestAnimationFrame(tick);
+                }).catch(function(e) {
+                    btn.innerHTML = originalBtnHTML; btn.disabled = false;
+                    showError("Video playback failed: " + e.message);
+                    stopMobileScanner();
+                });
+            } else {
+                btn.innerHTML = originalBtnHTML; btn.disabled = false;
+                requestAnimationFrame(tick);
+            }
+
+        } catch (err) {
+            btn.innerHTML = originalBtnHTML; btn.disabled = false;
+            let msg = err.message || err.name || String(err);
+            if (msg.toLowerCase().includes("notallowed") || err.name === "NotAllowedError") {
+                msg = "Permission denied. Explicitly allow camera access.";
+            }
+            showError("Camera Error: " + msg);
+        }
+    }
+
+    function showError(msg) {
+        const err = document.getElementById('camera-error');
+        err.innerHTML = "<b>Camera Failed</b><br><span class='small'>" + msg + "</span>";
+        err.classList.remove('d-none');
+    }
+
+    function tick() {
+        const video = document.getElementById('qr-video');
+        const canvas = document.getElementById('qr-canvas');
+        
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext("2d", { willReadFrequently: true });
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
+
+            if (code && code.data) {
+                document.getElementById('scan-status-text').innerHTML = "Found QR! Processing...";
+                document.getElementById('scan-indicator').classList.replace('text-primary', 'text-success');
+                
+                stopMobileScanner();
+                document.getElementById('scanned_url').value = code.data;
+                document.getElementById('cameraForm').submit();
+                return; 
+            }
+        }
+        scanAnimationFrame = requestAnimationFrame(tick);
+    }
+    
+    var cameraTab = document.getElementById('camera-tab');
+    if (cameraTab) {
+        cameraTab.addEventListener('hidden.bs.tab', stopMobileScanner);
+    }
+    
+    // Global Progressive Loader Interceptor
+    let stateInterval = null;
+
+    function triggerLoadingState() {
+        // Show scanning toast
+        showToast('🔍 Scanning URL for threats...', 'primary', 'spinner');
+
+        // Block UI immediately
+        const loader = document.getElementById('global-loader');
+        if(loader) loader.classList.remove('d-none');
+        
+        // Progressive status sequence to explain AI analysis
+        const titles = ["Initializing Scan", "Analyzing Heuristics", "Checking Intelligence APIs", "Finalizing Threat Model"];
+        const subs = ["Connecting to server...", "Extracting URL and analyzing with Machine Learning Models...", "Cross-referencing URL with VirusTotal and Google Safe Browsing...", "Calculating deterministic risk score..."];
+        
+        let step = 0;
+        if(stateInterval) clearInterval(stateInterval);
+        
+        stateInterval = setInterval(() => {
+            step++;
+            if(step < titles.length) {
+                const t = document.getElementById('loader-title');
+                const s = document.getElementById('loader-subtitle');
+                if(t) t.innerText = titles[step];
+                if(s) s.innerText = subs[step];
+            } else {
+                clearInterval(stateInterval);
+                stateInterval = null;
+            }
+        }, 1200);
+    }
+
+    // Network online/offline detection
+    window.addEventListener('offline', () => {
+        showToast('⚠️ No network connection. Please check your connection.', 'danger', 'wifi');
+    });
+    window.addEventListener('online', () => {
+        showToast('✅ Connection restored.', 'success', 'check-circle');
+    });
+
+    // Attach to all form submissions
+    document.getElementById('urlForm').addEventListener('submit', function(e) {
+        const urlInput = this.querySelector('input[name="scanned_url"]');
+        const urlValue = urlInput.value.trim();
+
+        // Robust URL validation
+        let isValid = false;
+        try {
+            const tempUrl = new URL(urlValue);
+            isValid = tempUrl.protocol === "http:" || tempUrl.protocol === "https:";
+        } catch (_) {
+            isValid = false;
+        }
+
+        if (!isValid) {
+            e.preventDefault();
+            showToast('⚠️ Invalid URL. Please enter a correct URL (e.g., https://example.com).', 'danger', 'circle-exclamation');
+            urlInput.classList.add('is-invalid');
+            return;
+        }
+
+        if (!navigator.onLine) {
+            e.preventDefault();
+            showToast('⚠️ No network connection. Please check your connection.', 'danger', 'wifi');
+            return;
+        }
+        urlInput.classList.remove('is-invalid');
+        triggerLoadingState();
+    });
+    
+    document.getElementById('cameraForm').addEventListener('submit', function(e) {
+        if (!navigator.onLine) {
+            e.preventDefault();
+            showToast('⚠️ No network connection. Please check your connection.', 'danger', 'wifi');
+            return;
+        }
+        triggerLoadingState();
+    });
+
+    // Universal UI Reset (Handles Back Button and Page Reload)
+    function resetScanningUI() {
+        if(stateInterval) {
+            clearInterval(stateInterval);
+            stateInterval = null;
+        }
+        
+        const loader = document.getElementById('global-loader');
+        if (loader) {
+            loader.classList.add('d-none');
+            // Reset loader text as well
+            const t = document.getElementById('loader-title');
+            const s = document.getElementById('loader-subtitle');
+            if(t) t.innerText = "Scanning Target...";
+            if(s) s.innerText = "Establishing connection";
+        }
+
+        // Reset Upload Button
+        const uploadBtn = document.getElementById('btn-upload-scan');
+        if (uploadBtn) {
+            uploadBtn.innerHTML = '<i class="fa-solid fa-qrcode me-2"></i> Scan for Threats';
+            uploadBtn.disabled = false;
+        }
+
+        // Reset Start Scanner Button
+        const startScannerBtn = document.getElementById('btn-start-scanner');
+        if (startScannerBtn) {
+            startScannerBtn.innerHTML = '<i class="fa fa-video me-2"></i> Start Scanner';
+            startScannerBtn.disabled = false;
+        }
+    }
+
+    window.addEventListener('pageshow', resetScanningUI);
+    document.addEventListener('DOMContentLoaded', resetScanningUI);
+</script>
+{% endblock %}

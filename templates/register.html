@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+/* ── Register card ────────────────────────────────── */
+[data-bs-theme="dark"] #registerCard,
+[data-bs-theme="dark"] #mfaCard {
+    background-color: #1e2530 !important;
+    border-color: #2d3748 !important;
+    color: #e2e8f0 !important;
+}
+[data-bs-theme="dark"] #registerCard .card-header,
+[data-bs-theme="dark"] #mfaCard .card-header {
+    background-color: #1e2530 !important;
+    color: #e2e8f0 !important;
+    border-bottom-color: #2d3748 !important;
+}
+[data-bs-theme="dark"] #registerCard label { color: #cbd5e1 !important; }
+[data-bs-theme="dark"] #registerCard .form-control,
+[data-bs-theme="dark"] #registerCard .form-select {
+    background-color: #0f172a;
+    border-color: #334155;
+    color: #e2e8f0;
+}
+[data-bs-theme="dark"] #registerCard .form-control:focus,
+[data-bs-theme="dark"] #registerCard .form-select:focus {
+    background-color: #0f172a;
+    border-color: #3b82f6;
+    color: #e2e8f0;
+    box-shadow: 0 0 0 0.2rem rgba(59,130,246,0.25);
+}
+[data-bs-theme="dark"] #registerCard small { color: #94a3b8; }
+[data-bs-theme="dark"] #registerCard small a { color: #60a5fa; }
+[data-bs-theme="dark"] #registerCard .text-muted { color: #94a3b8 !important; }
+
+/* ── Brand banner header ─────────────────────────────── */
+.auth-brand-header {
+    text-align: center;
+    margin-bottom: 1.2rem;
+    animation: fadeInDown 0.6s ease-out;
+}
+.auth-brand-header .brand-banner {
+    max-width: 420px;
+    width: 90%;
+    object-fit: contain;
+    border-radius: 12px;
+    filter: drop-shadow(0 0 20px rgba(0, 210, 255, 0.4));
+    transition: transform 0.3s ease, filter 0.3s ease;
+    animation: pulse-glow 3s ease-in-out infinite;
+}
+.auth-brand-header .brand-banner:hover {
+    transform: scale(1.03);
+    filter: drop-shadow(0 0 32px rgba(0, 210, 255, 0.75));
+}
+@keyframes pulse-glow {
+    0%, 100% { filter: drop-shadow(0 0 14px rgba(0, 210, 255, 0.35)); }
+    50%       { filter: drop-shadow(0 0 28px rgba(0, 210, 255, 0.7)); }
+}
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+</style>
+<div class="row justify-content-center mt-4">
+    <div class="col-md-5 col-lg-4">
+        <div class="card" id="registerCard">
+            <div class="card-header text-center">
+                <h3 class="mb-1">Register</h3>
+                <small class="text-muted d-block mt-2 font-italic">Secure Life with Secure Scanning</small>
+            </div>
+            <div class="card-body">
+                <form id="registerForm">
+                    <div class="row mb-3">
+                        <div class="col">
+                            <label>First Name</label>
+                            <input type="text" id="firstName" class="form-control" placeholder="John" required>
+                        </div>
+                        <div class="col">
+                            <label>Last Name</label>
+                            <input type="text" id="lastName" class="form-control" placeholder="Doe" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label>Email</label>
+                        <input type="email" id="email" class="form-control" placeholder="your@email.com" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>Password</label>
+                        <input type="password" id="password" class="form-control" placeholder="********" required>
+                        <small class="form-text text-muted">Password must be at least 8 characters, contain an uppercase letter, a lowercase letter, a number, and a special character.</small>
+                    </div>
+                    <div class="mb-4">
+                        <label>Role</label>
+                        <select id="role" class="form-select" required>
+                            <option value="user">User</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Create Account</button>
+                    <div class="text-center mt-3">
+                        <small>Already have an account? <a href="/auth/login">Sign in</a></small>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 2FA Setup Card (Hidden initially) -->
+        <div class="card d-none" id="mfaCard">
+            <div class="card-header text-center bg-success text-white">
+                <h4>Registration Successful!</h4>
+            </div>
+            <div class="card-body text-center">
+                <p>Please scan this QR code with Google Authenticator or Authy to set up 2-Factor Authentication.</p>
+                <img id="mfaQrcode" src="" alt="MFA QR Code" class="img-fluid mb-3">
+                <p class="text-muted small">You will need this to access any links.</p>
+                <a href="/auth/login" class="btn btn-primary">Go to Login</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const fn = document.getElementById('firstName').value;
+        const ln = document.getElementById('lastName').value;
+        const em = document.getElementById('email').value;
+        const p = document.getElementById('password').value;
+        const r = document.getElementById('role').value;
+
+        try {
+            const res = await fetch('/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ first_name: fn, last_name: ln, email: em, password: p, role: r })
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                // Show QR Code
+                document.getElementById('registerCard').classList.add('d-none');
+                document.getElementById('mfaCard').classList.remove('d-none');
+                document.getElementById('mfaQrcode').src = "data:image/png;base64," + data.qr_code;
+            } else {
+                showAlert(data.msg);
+            }
+        } catch (err) {
+            showAlert('Network error occurred.');
+        }
+    });
+</script>
+{% endblock %}

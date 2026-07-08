@@ -1,0 +1,392 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center mt-4 mb-5">
+    <div class="col-md-10">
+
+        <!-- Header Banner (Softened styling) -->
+        {% if risk_level == 'Safe' %}
+        <div class="alert alert-success d-flex align-items-center mb-4 border-0 shadow-sm" role="alert" style="background-color: #e8f5e9; color: #2e7d32;">
+            <i class="fa fa-shield-check fa-2x me-3"></i>
+            <div>
+                <h4 class="alert-heading mb-1 fw-bold">Link is Secure</h4>
+                <p class="mb-0">This URL passed all security checks and is safe to access.</p>
+            </div>
+        </div>
+        {% elif risk_level == 'Suspicious' %}
+        <div class="alert alert-warning d-flex align-items-center mb-4 border-0 shadow-sm" role="alert" style="background-color: #fff3e0; color: #e65100;">
+            <i class="fa fa-triangle-exclamation fa-2x me-3"></i>
+            <div>
+                <h4 class="alert-heading mb-1 fw-bold">Suspicious Link Warning</h4>
+                <p class="mb-0">We detected anomalies in this URL. It may be deceptive or unsafe. Proceed with caution.</p>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-danger d-flex align-items-center mb-4 border-0 shadow-sm" role="alert" style="background-color: #ffebee; color: #c62828;">
+            <i class="fa fa-skull-crossbones fa-2x me-3"></i>
+            <div>
+                <h4 class="alert-heading mb-1 fw-bold">Malicious Link Detected</h4>
+                <p class="mb-0">This URL has been verified as dangerous. Do not proceed.</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Risk Assessment & Site Preview Side-by-Side -->
+        <div class="row mb-4">
+            <div class="col-md-5">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-header bg-white border-bottom-0 pt-3 pb-0">
+                        <h6 class="mb-0 fw-bold text-muted text-uppercase">Risk Assessment</h6>
+                    </div>
+                    <div class="card-body text-center d-flex flex-column justify-content-center">
+                        <div class="d-flex justify-content-center mb-3">
+                            <div class="rounded-circle d-flex flex-column justify-content-center align-items-center shadow-sm"
+                                style="width: 140px; height: 140px; border: 8px solid {{ '#66bb6a' if risk_level == 'Safe' else ('#ffa726' if risk_level == 'Suspicious' else '#ef5350') }}; background: #fafafa;">
+                                <h1 class="mb-0 fw-bold display-4">{{ risk_score }}</h1>
+                                <small class="text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 1px;">Score</small>
+                            </div>
+                        </div>
+                        <h5 class="fw-bold {{ 'text-success' if risk_level == 'Safe' else ('text-warning' if risk_level == 'Suspicious' else 'text-danger') }}">{{ risk_level|upper }} RISK</h5>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-7">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-header bg-white border-bottom-0 pt-3 pb-0 d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 fw-bold text-muted text-uppercase">Site Preview</h6>
+                        <span class="badge bg-light text-dark border"><i class="fa fa-lock me-1"></i> Isolated Snapshot</span>
+                    </div>
+                    <div class="card-body p-3 text-center position-relative d-flex align-items-center justify-content-center bg-light m-3 rounded">
+                        <img src="https://api.microlink.io/?url={{ encoded_url }}&screenshot=true&meta=false&embed=screenshot.url" 
+                            class="img-fluid rounded"
+                            alt="Safe visual preview of the website" 
+                            style="max-height: 180px; object-fit: contain;"
+                            onerror="this.onerror=null; this.src='https://placehold.co/800x400/f8f9fa/a3a3a3?text=Preview+Unavailable';">
+                        
+                        {% if risk_level != 'Safe' %}
+                        <div class="position-absolute top-0 start-0 w-100 h-100 rounded border border-3 border-danger" style="background: rgba(220, 53, 69, 0.1); pointer-events: none;"></div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Checks Block -->
+        <div class="card mb-4 shadow-sm border-0 overflow-hidden">
+            <div class="bg-light p-3 border-bottom">
+                <h5 class="mb-0 fw-normal text-dark" style="font-size: 1.1rem; color: #444 !important;">Security Checks</h5>
+            </div>
+            <ul class="list-group list-group-flush pb-0 mb-0">
+                
+                <!-- Phishing -->
+                {% if details.phishing_prob >= 30 or details.ml_label == 'Phishing' %}
+                <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-4 py-3" style="background-color: #f7d2d7; color: #9c152a;">
+                    <span>ML Phishing Detection</span>
+                    <span class="fw-bold"><i class="fa-solid fa-triangle-exclamation me-1"></i> Failed (Score: {{ details.phishing_prob }}%)</span>
+                </li>
+                {% else %}
+                <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-4 py-3" style="background-color: #cbead1; color: #155724;">
+                    <span>ML Phishing Detection</span>
+                    <span class="fw-bold"><i class="fa-solid fa-check-circle me-1"></i> Passed (Safe)</span>
+                </li>
+                {% endif %}
+
+                <!-- Keywords -->
+                {% if details.keyword_score > 0 %}
+                <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-4 py-3" style="background-color: #f7e098; color: #856404;">
+                    <span>Suspicious Keyword Analysis</span>
+                    <span class="fw-bold"><i class="fa-solid fa-circle-exclamation me-1"></i> Flagged ({{ details.keyword_score }} Keywords)</span>
+                </li>
+                {% else %}
+                <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-4 py-3" style="background-color: #cbead1; color: #155724;">
+                    <span>Suspicious Keyword Analysis</span>
+                    <span class="fw-bold"><i class="fa-solid fa-check-circle me-1"></i> Passed (Clean)</span>
+                </li>
+                {% endif %}
+
+                <!-- Malware -->
+                {% if details.malware_prob >= 30 or details.ml_label == 'Malware' %}
+                <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-4 py-3" style="background-color: #f7d2d7; color: #9c152a;">
+                    <span>ML Malware Detection</span>
+                    <span class="fw-bold"><i class="fa-solid fa-triangle-exclamation me-1"></i> Failed (Score: {{ details.malware_prob }}%)</span>
+                </li>
+                {% else %}
+                <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-4 py-3" style="background-color: #cbead1; color: #155724;">
+                    <span>ML Malware Detection</span>
+                    <span class="fw-bold"><i class="fa-solid fa-check-circle me-1"></i> Passed (Safe)</span>
+                </li>
+                {% endif %}
+
+                <!-- VirusTotal -->
+                {% if details.vt_detections > 0 %}
+                <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-4 py-3" style="background-color: #f7d2d7; color: #9c152a;">
+                    <span>Threat Intelligence APIs (VirusTotal)</span>
+                    <span class="fw-bold"><i class="fa-solid fa-triangle-exclamation me-1"></i> Failed ({{ details.vt_detections }} Detections)</span>
+                </li>
+                {% else %}
+                <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-4 py-3" style="background-color: #cbead1; color: #155724;">
+                    <span>Threat Intelligence APIs (VirusTotal)</span>
+                    <span class="fw-bold"><i class="fa-solid fa-check-circle me-1"></i> Passed (0 Detections)</span>
+                </li>
+                {% endif %}
+
+                <!-- Google Safe Browsing -->
+                {% if not details.google_safe_browsing_safe %}
+                <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-4 py-3" style="background-color: #f7d2d7; color: #9c152a;">
+                    <span>Google Safe Browsing</span>
+                    <span class="fw-bold"><i class="fa-solid fa-triangle-exclamation me-1"></i> Failed (Blacklisted)</span>
+                </li>
+                {% else %}
+                <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-4 py-3" style="background-color: #cbead1; color: #155724;">
+                    <span>Google Safe Browsing</span>
+                    <span class="fw-bold"><i class="fa-solid fa-check-circle me-1"></i> Passed (No Logged Threats)</span>
+                </li>
+                {% endif %}
+
+            </ul>
+        </div>
+
+        <!-- URL Information & Explainable AI Module -->
+        <div class="card mb-4 shadow-sm border-0">
+            <div class="card-body">
+                <h6 class="fw-bold text-muted text-uppercase mb-3">Analyzed URL</h6>
+                <div class="p-3 rounded mb-4 {{ 'bg-success-subtle text-success' if risk_level == 'Safe' else ('bg-warning-subtle text-warning-emphasis' if risk_level == 'Suspicious' else 'bg-danger-subtle text-danger') }}"
+                    style="word-break: break-all; font-family: monospace; font-size: 1.1rem;">
+                    {{ url }}
+                </div>
+
+                {% if risk_level != 'Safe' %}
+                <!-- Explainable Threat Breakdown for Suspicious/Malicious -->
+                <div class="alert border mb-4" style="background-color: #fffaf0; border-color: #ffe0b2 !important;">
+                    <h6 class="fw-bold mb-3" style="color: #e65100;"><i class="fa-regular fa-circle-info me-2"></i>Why This Is Risky</h6>
+                    
+                    <div class="p-3 border rounded bg-white mb-3 shadow-sm">
+                        <p class="small text-dark mb-0">This link is extremely dangerous. Our AI detected multiple serious threats. Visiting this site could result in immediate harm to your device or theft of your personal information.</p>
+                    </div>
+
+                    <p class="small fw-bold text-dark mb-2">Our AI detected the following issues:</p>
+                    <ul class="list-unstyled small mb-3" style="color: #424242;">
+                        {% if details.ml_label == 'Phishing' %}
+                        <li class="mb-2"><i class="fa fa-triangle-exclamation text-warning me-2"></i> <strong>Phishing patterns detected</strong> - The URL structure and content match known phishing tactics used to steal personal information</li>
+                        {% endif %}
+                        {% if details.ml_label == 'Malware' %}
+                        <li class="mb-2"><i class="fa fa-triangle-exclamation text-warning me-2"></i> <strong>Malware signatures found</strong> - This site shows characteristics of sites that distribute harmful software</li>
+                        {% endif %}
+                        {% if details.keyword_score > 0 %}
+                        <li class="mb-2"><i class="fa fa-triangle-exclamation text-warning me-2"></i> <strong>Suspicious keywords present</strong> - The URL contains words commonly used in scams (like "urgent", "verify", "suspended")</li>
+                        {% endif %}
+                        {% if details.virustotal_score > 0 %}
+                        <li class="mb-2"><i class="fa fa-triangle-exclamation text-warning me-2"></i> <strong>Flagged by security databases</strong> - Multiple threat intelligence sources have reported this URL as malicious</li>
+                        {% endif %}
+                        {% if not details.google_safe_browsing_safe %}
+                        <li class="mb-2"><i class="fa fa-triangle-exclamation text-warning me-2"></i> <strong>Google Safe Browsing blacklist</strong> - Google has explicitly listed this exact URL as hostile</li>
+                        {% endif %}
+                    </ul>
+                    
+                    <div class="p-2 rounded mt-3 border" style="background-color: #ffffff; border-color: #ffe0b2 !important;">
+                        <small class="fw-bold" style="color: #e65100;">Risk Score Explanation:</small> 
+                        <small class="text-dark">A risk score of {{ risk_score }} indicates {% if risk_score < 70 %}a highly irregular destination. Extreme caution advised.{% else %}CRITICAL danger. This is among the most dangerous links we've analyzed.{% endif %}</small>
+                    </div>
+                </div>
+                
+                <!-- Recommended Next Steps -->
+                <div class="p-4 rounded border mb-4" style="background-color: #f0f7ff; border-color: #cce5ff !important;">
+                    <h6 class="fw-bold mb-3" style="color: #0056b3;"><i class="fa-regular fa-circle text-primary me-2"></i>Recommended Next Steps</h6>
+                    <div class="d-flex flex-column gap-2">
+                        <div class="d-flex align-items-center">
+                            <span class="badge rounded-pill bg-primary bg-opacity-25 text-primary me-3" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">1</span>
+                            <span class="small text-dark"><strong>Do not visit</strong> this link</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="badge rounded-pill bg-primary bg-opacity-25 text-primary me-3" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">2</span>
+                            <span class="small text-dark">Delete any messages containing this URL</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="badge rounded-pill bg-primary bg-opacity-25 text-primary me-3" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">3</span>
+                            <span class="small text-dark">Report to your IT administrator or security team</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="badge rounded-pill bg-primary bg-opacity-25 text-primary me-3" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">4</span>
+                            <span class="small text-dark">Warn others if you received this from someone you know (their account may be compromised)</span>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <!-- Explainable Safe Breakdown -->
+                <div class="alert border" style="background-color: #f1f8e9; border-color: #c5e1a5 !important;">
+                    <h6 class="fw-bold text-success"><i class="fa fa-check-double me-2"></i>Security Validation Passed</h6>
+                    <ul class="small text-muted mb-3 mt-2">
+                        <li><i class="fa fa-check text-success me-2"></i> AI evaluated structure as benign.</li>
+                        <li><i class="fa fa-check text-success me-2"></i> No threat flags across global intelligence databases.</li>
+                        <li><i class="fa fa-check text-success me-2"></i> Google Safe Browsing confirms clear status.</li>
+                    </ul>
+                    <div class="p-2 rounded mt-3 bg-white border">
+                        <small class="fw-bold text-success">Risk Score Explanation:</small> 
+                        <small class="text-dark">A safety score of {{ risk_score }} means this link exhibits virtually no threat characteristics. It can be navigated securely.</small>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Action Bar -->
+                <div class="mt-4 pt-3 border-top gap-3 d-flex flex-wrap justify-content-center">
+                    {% if risk_level == 'Safe' %}
+                    <button class="btn btn-success px-4 py-2 fw-bold flex-grow-1" onclick="prompt2FA()"><i class="fa fa-external-link-alt me-2"></i> Open Link Securely</button>
+                    {% else %}
+                    <button class="btn btn-danger px-4 py-2 fw-bold flex-grow-1" id="blockBtn" onclick="reportMaliciousUrl('{{ url }}')"><i class="fa fa-shield-halved me-2"></i> Block & Report</button>
+                    {% endif %}
+                    <a href="/scanner/" class="btn btn-outline-primary px-4 py-2 fw-bold flex-grow-1"><i class="fa fa-qrcode me-2"></i> Scan Another</a>
+                    <button class="btn btn-outline-secondary px-4 py-2 flex-grow-1" onclick="triggerDownload()"><i class="fa fa-download me-2"></i> Download Audit Report</button>
+                    
+                    {% if risk_level != 'Safe' %}
+                    <button class="btn btn-link text-muted small mt-2 w-100" onclick="prompt2FA()">Acknowledge risk and proceed anyway</button>
+                    {% endif %}
+                </div>
+
+                <!-- Hidden export form -->
+                <form id="downloadForm" action="/scanner/download_report" method="POST" style="display: none;">
+                    <input type="hidden" name="url" value="{{ url }}">
+                    <input type="hidden" name="risk_level" value="{{ risk_level }}">
+                    <input type="hidden" name="risk_score" value="{{ risk_score }}">
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- 2FA Modal -->
+<div class="modal fade" id="mfaModal" tabindex="-1" aria-labelledby="mfaModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="mfaModalLabel">Two-Factor Authentication</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center p-4">
+                <i class="fa fa-mobile fa-4x mb-3 text-primary"></i>
+                <p>To prove authorized access to this link, enter your 6-digit Google Authenticator code.</p>
+                <input type="text" id="mfaCode" class="form-control text-center fs-2 mb-3" placeholder="000000"
+                    maxlength="6" style="letter-spacing: 12px;">
+                <div id="mfaStatus" class="d-none mb-3"></div>
+                <button class="btn btn-primary w-100" type="button" id="verifyBtn">Verify & Open Link</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let mfaModal = null;
+
+    document.addEventListener("DOMContentLoaded", () => {
+        mfaModal = new bootstrap.Modal(document.getElementById('mfaModal'));
+    });
+
+    function prompt2FA() {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert("Your session seems to have expired, or you must be logged in. Please Login to verify and access this link.");
+            window.location.href = '/auth/login';
+            return;
+        }
+        document.getElementById('mfaCode').value = '';
+        document.getElementById('mfaStatus').className = 'd-none';
+        mfaModal.show();
+    }
+
+    document.getElementById('verifyBtn').addEventListener('click', async () => {
+        const code = document.getElementById('mfaCode').value;
+        const statusDiv = document.getElementById('mfaStatus');
+        const token = localStorage.getItem('token');
+
+        if (!code || code.length !== 6) {
+            statusDiv.className = 'text-danger fw-bold';
+            statusDiv.innerHTML = 'Please enter a 6-digit code.';
+            return;
+        }
+
+        statusDiv.className = '';
+        statusDiv.innerHTML = '<div class="spinner-border spinner-border-sm text-primary"></div> Verifying...';
+
+        // Pre-allocate the tab synchronously to bypass aggressive popup blockers!
+        const newTab = window.open('about:blank', '_blank');
+
+        try {
+            const res = await fetch('/auth/verify-2fa', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({ otp: code })
+            });
+            const data = await res.json();
+
+            if (res.ok && data.verified) {
+                statusDiv.innerHTML = '<span class="text-success fw-bold"><i class="fa fa-check"></i> Verified. Opening secure tab...</span>';
+                showToast('✅ Verification done! Opening link securely...', 'success', 'check-circle');
+                
+                if (newTab) {
+                    newTab.location.href = "{{ url }}";
+                } else {
+                    window.location.href = "{{ url }}";
+                }
+                
+                setTimeout(() => mfaModal.hide(), 1500);
+            } else {
+                if (newTab) newTab.close();
+                if (data.msg && data.msg.toLowerCase().includes("signature verification failed")) {
+                    statusDiv.innerHTML = `<span class="text-danger fw-bold"><i class="fa fa-times"></i> Session expired. Please log out and log in again.</span>`;
+                    showToast('⚠️ Session expired. Please log in again.', 'warning', 'triangle-exclamation');
+                } else {
+                    statusDiv.innerHTML = `<span class="text-danger fw-bold"><i class="fa fa-times"></i> ${data.msg || 'Verification Failed'}</span>`;
+                    showToast('❌ ' + (data.msg || 'Verification failed. Try again.'), 'danger', 'circle-xmark');
+                }
+            }
+        } catch (err) {
+            if (newTab) newTab.close();
+            statusDiv.innerHTML = `<span class="text-danger fw-bold"><i class="fa fa-times"></i> Network error</span>`;
+            showToast('⚠️ Network error. Please check your connection.', 'danger', 'wifi');
+        }
+    });
+
+    function triggerDownload() {
+        document.getElementById('downloadForm').submit();
+    }
+
+    async function reportMaliciousUrl(reportedUrl) {
+        const btn = document.getElementById('blockBtn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin me-2"></i>Reporting...';
+        btn.disabled = true;
+        
+        const formData = new FormData();
+        formData.append('url', reportedUrl);
+        
+        const token = localStorage.getItem('token');
+        
+        try {
+            const res = await fetch('/scanner/report_url', {
+                method: 'POST',
+                headers: token ? { 'Authorization': 'Bearer ' + token } : {},
+                body: formData
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                btn.innerHTML = '<i class="fa fa-check me-2"></i>Reported & Blocked';
+                btn.classList.replace('btn-danger', 'btn-success');
+            } else {
+                alert(data.msg || "Failed to report URL to backend");
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        } catch(err) {
+            alert("Network error occurred during reporting.");
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    }
+</script>
+{% endblock %}

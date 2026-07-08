@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure QR Threat Detection</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <!-- Custom CSS -->
+    <!-- Theme pre-loader to avoid flash of white -->
+    <script>
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.setAttribute('data-bs-theme', 'dark');
+        } else {
+            document.documentElement.setAttribute('data-bs-theme', 'light');
+        }
+    </script>
+    <style>
+        /* ── Global base ───────────────────────────────── */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        body[data-bs-theme="light"] {
+            background-color: #f4f7f6;
+        }
+        .navbar {
+            background-color: #2c3e50;
+        }
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .card-header {
+            background-color: #fff;
+            border-bottom: 2px solid #f4f7f6;
+            font-weight: bold;
+        }
+
+        /* ══════════════════════════════════════════════
+           GLOBAL DARK MODE — covers every page/interface
+           ══════════════════════════════════════════════ */
+        [data-bs-theme="dark"] body,
+        [data-bs-theme="dark"] {
+            background-color: #0f1621 !important;
+            color: #cbd5e1 !important;
+        }
+
+        /* Cards */
+        [data-bs-theme="dark"] .card {
+            background-color: #1a2235 !important;
+            border-color: #2d3748 !important;
+            color: #cbd5e1 !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important;
+        }
+        [data-bs-theme="dark"] .card-header {
+            background-color: #1e2c42 !important;
+            border-bottom-color: #2d3748 !important;
+            color: #e2e8f0 !important;
+        }
+        [data-bs-theme="dark"] .card-body {
+            background-color: #1a2235 !important;
+            color: #cbd5e1 !important;
+        }
+        [data-bs-theme="dark"] .card-footer {
+            background-color: #1e2c42 !important;
+            border-top-color: #2d3748 !important;
+        }
+
+        /* List groups (sidebar + profile box) */
+        [data-bs-theme="dark"] .list-group-item {
+            background-color: #1a2235 !important;
+            border-color: #2d3748 !important;
+            color: #cbd5e1 !important;
+        }
+        [data-bs-theme="dark"] .list-group-item.active {
+            background-color: #2563eb !important;
+            border-color: #2563eb !important;
+            color: #fff !important;
+        }
+        [data-bs-theme="dark"] .list-group-item-action:hover {
+            background-color: #1e3a5f !important;
+            color: #93c5fd !important;
+        }
+        [data-bs-theme="dark"] .list-group-item.bg-primary {
+            background-color: #1d4ed8 !important;
+        }
+
+        /* Form controls */
+        [data-bs-theme="dark"] .form-control,
+        [data-bs-theme="dark"] .form-select {
+            background-color: #0f172a !important;
+            border-color: #334155 !important;
+            color: #e2e8f0 !important;
+        }
+        [data-bs-theme="dark"] .form-control::placeholder {
+            color: #64748b !important;
+        }
+        [data-bs-theme="dark"] .form-control:focus,
+        [data-bs-theme="dark"] .form-select:focus {
+            background-color: #0f172a !important;
+            border-color: #3b82f6 !important;
+            color: #e2e8f0 !important;
+            box-shadow: 0 0 0 0.2rem rgba(59,130,246,0.25) !important;
+        }
+        [data-bs-theme="dark"] .form-check-input {
+            background-color: #0f172a !important;
+            border-color: #334155 !important;
+        }
+        [data-bs-theme="dark"] label {
+            color: #94a3b8;
+        }
+
+        /* Tables */
+        [data-bs-theme="dark"] .table {
+            color: #cbd5e1 !important;
+            border-color: #2d3748 !important;
+        }
+        [data-bs-theme="dark"] .table thead th {
+            background-color: #1e2c42 !important;
+            color: #93c5fd !important;
+            border-bottom-color: #2d3748 !important;
+        }
+        [data-bs-theme="dark"] .table tbody tr {
+            background-color: #1a2235 !important;
+            border-color: #2d3748 !important;
+        }
+        [data-bs-theme="dark"] .table tbody tr:hover {
+            background-color: #1e3a5f !important;
+        }
+        [data-bs-theme="dark"] .table td,
+        [data-bs-theme="dark"] .table th {
+            border-color: #2d3748 !important;
+            color: #cbd5e1 !important;
+        }
+        [data-bs-theme="dark"] .table-striped > tbody > tr:nth-of-type(odd) > * {
+            background-color: rgba(255,255,255,0.03) !important;
+            color: #cbd5e1 !important;
+        }
+
+        /* Modals */
+        [data-bs-theme="dark"] .modal-content {
+            background-color: #1a2235 !important;
+            border-color: #2d3748 !important;
+            color: #cbd5e1 !important;
+        }
+        [data-bs-theme="dark"] .modal-header {
+            border-bottom-color: #2d3748 !important;
+        }
+        [data-bs-theme="dark"] .modal-footer {
+            border-top-color: #2d3748 !important;
+        }
+        [data-bs-theme="dark"] .btn-close {
+            filter: invert(1) grayscale(100%) brightness(200%);
+        }
+
+        /* Alerts */
+        [data-bs-theme="dark"] .alert {
+            border-color: #2d3748 !important;
+        }
+        [data-bs-theme="dark"] .alert-danger  { background-color: #3b1219 !important; color: #fca5a5 !important; }
+        [data-bs-theme="dark"] .alert-warning { background-color: #3b2700 !important; color: #fde68a !important; }
+        [data-bs-theme="dark"] .alert-success { background-color: #0c2e1a !important; color: #86efac !important; }
+        [data-bs-theme="dark"] .alert-info    { background-color: #0c2b40 !important; color: #7dd3fc !important; }
+
+        /* Subtle background utilities */
+        [data-bs-theme="dark"] .bg-light  { background-color: #1e2c42 !important; }
+        [data-bs-theme="dark"] .bg-white  { background-color: #1a2235 !important; }
+        [data-bs-theme="dark"] .text-dark { color: #e2e8f0 !important; }
+        [data-bs-theme="dark"] .text-muted { color: #64748b !important; }
+        [data-bs-theme="dark"] .border    { border-color: #2d3748 !important; }
+        [data-bs-theme="dark"] .border-top    { border-top-color: #2d3748 !important; }
+        [data-bs-theme="dark"] .border-bottom { border-bottom-color: #2d3748 !important; }
+
+        /* Subtle contextual bg helpers used in result.html */
+        [data-bs-theme="dark"] .bg-success-subtle  { background-color: #0c2e1a !important; }
+        [data-bs-theme="dark"] .bg-warning-subtle  { background-color: #2d1f00 !important; }
+        [data-bs-theme="dark"] .bg-danger-subtle   { background-color: #2d0a0a !important; }
+        [data-bs-theme="dark"] .text-success        { color: #4ade80 !important; }
+        [data-bs-theme="dark"] .text-warning-emphasis { color: #fbbf24 !important; }
+        [data-bs-theme="dark"] .text-danger        { color: #f87171 !important; }
+
+        /* Dropdowns */
+        [data-bs-theme="dark"] .dropdown-menu {
+            background-color: #1a2235 !important;
+            border-color: #2d3748 !important;
+        }
+        [data-bs-theme="dark"] .dropdown-item {
+            color: #cbd5e1 !important;
+        }
+        [data-bs-theme="dark"] .dropdown-item:hover {
+            background-color: #1e3a5f !important;
+            color: #93c5fd !important;
+        }
+
+        /* Pagination */
+        [data-bs-theme="dark"] .page-link {
+            background-color: #1a2235 !important;
+            border-color: #2d3748 !important;
+            color: #93c5fd !important;
+        }
+        [data-bs-theme="dark"] .page-item.active .page-link {
+            background-color: #2563eb !important;
+            border-color: #2563eb !important;
+        }
+
+        /* Input group */
+        [data-bs-theme="dark"] .input-group-text {
+            background-color: #1e2c42 !important;
+            border-color: #334155 !important;
+            color: #94a3b8 !important;
+        }
+
+        /* Nav pills/tabs */
+        [data-bs-theme="dark"] .nav-link {
+            color: #94a3b8 !important;
+        }
+        [data-bs-theme="dark"] .nav-link.active {
+            color: #3b82f6 !important;
+            background-color: #1e3a5f !important;
+        }
+        [data-bs-theme="dark"] .nav-pills .nav-link:not(.active):hover {
+            background-color: #1e2c42 !important;
+            color: #93c5fd !important;
+        }
+
+        /* Scan page URL input area */
+        [data-bs-theme="dark"] .tab-content .border.rounded.bg-light {
+            background-color: #1e2c42 !important;
+            border-color: #2d3748 !important;
+        }
+
+        /* Profile / user info card in sidebar */
+        [data-bs-theme="dark"] .profile-card,
+        [data-bs-theme="dark"] .card.shadow-sm {
+            background-color: #1a2235 !important;
+            border-color: #2d3748 !important;
+        }
+
+        /* Progress bars */
+        [data-bs-theme="dark"] .progress {
+            background-color: #1e2c42 !important;
+        }
+
+        /* Small text helpers */
+        [data-bs-theme="dark"] small,
+        [data-bs-theme="dark"] .small {
+            color: #94a3b8;
+        }
+        [data-bs-theme="dark"] h1,[data-bs-theme="dark"] h2,
+        [data-bs-theme="dark"] h3,[data-bs-theme="dark"] h4,
+        [data-bs-theme="dark"] h5,[data-bs-theme="dark"] h6 {
+            color: #e2e8f0;
+        }
+        [data-bs-theme="dark"] p { color: #94a3b8; }
+        [data-bs-theme="dark"] a:not(.btn):not(.nav-link):not(.list-group-item) {
+            color: #60a5fa;
+        }
+
+        /* Badge fixes */
+        [data-bs-theme="dark"] .badge.bg-light { background-color: #1e2c42 !important; color: #e2e8f0 !important; }
+        [data-bs-theme="dark"] .badge.text-dark { color: #e2e8f0 !important; }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/"><i class="fa-solid fa-qrcode"></i> SecureQR</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto" id="nav-links">
+                    <!-- Populated by JS -->
+                </ul>
+                <button class="btn btn-outline-light ms-3 border-0" id="themeToggle" onclick="toggleTheme()">
+                    <i class="fa fa-moon"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Modern Toast Notification Container -->
+    <div aria-live="polite" aria-atomic="true" class="position-relative">
+        <div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;">
+            <!-- Jinja Flask Flashed Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="toast align-items-center text-bg-{{ 'danger' if category == 'error' else ('success' if category == 'success' else 'primary') }} border-0 show" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="4000">
+                            <div class="d-flex">
+                                <div class="toast-body">
+                                    <i class="fa fa-{{ 'circle-exclamation' if category == 'error' else 'check-circle' }} me-2"></i> {{ message }}
+                                </div>
+                                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Simple frontend logic to manage auth state
+        const token = localStorage.getItem('token');
+        const role = localStorage.getItem('role');
+        const navLinks = document.getElementById('nav-links');
+
+        if (token) {
+            navLinks.innerHTML = `
+            <li class="nav-item"><a class="nav-link" href="/scanner/">Scan QR</a></li>
+            <li class="nav-item"><a class="nav-link" href="/dashboard">Dashboard</a></li>
+            <li class="nav-item"><a class="nav-link" href="#" onclick="logout()">Logout</a></li>
+        `;
+        } else {
+            navLinks.innerHTML = `
+            <li class="nav-item"><a class="nav-link" href="/auth/login">Login</a></li>
+            <li class="nav-item"><a class="nav-link" href="/auth/register">Register</a></li>
+        `;
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('role');
+            window.location.href = '/auth/login';
+        }
+
+        // 5-Minute Inactivity Auto-Logout Security Feature
+        if (token) {
+            let idleTimer;
+            const INACTIVITY_LIMIT_MS = 5 * 60 * 1000; // 5 minutes
+
+            function resetIdleTimer() {
+                clearTimeout(idleTimer);
+                idleTimer = setTimeout(() => {
+                    alert("Your session has timed out due to 5 minutes of inactivity. For your security, you have been logged out.");
+                    logout();
+                }, INACTIVITY_LIMIT_MS);
+            }
+
+            // Monitor ALL interactivity vectors
+            window.onload = resetIdleTimer;
+            document.onmousemove = resetIdleTimer;
+            document.onkeypress = resetIdleTimer;
+            document.ontouchstart = resetIdleTimer;
+            document.onclick = resetIdleTimer;
+            document.onscroll = resetIdleTimer;
+        }
+
+        // Improved Universal Toast Notification Function
+        function showToast(msg, type = 'danger', icon = 'circle-exclamation') {
+            const toastContainer = document.getElementById('toast-container');
+            const toastId = 'toast-' + Math.random().toString(36).substr(2, 9);
+            
+            const toastHtml = `
+            <div id="${toastId}" class="toast align-items-center text-bg-${type} border-0 show" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fa fa-${icon} me-2"></i> ${msg}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>`;
+            
+            toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+            
+            // Auto hide after 4 seconds
+            setTimeout(() => {
+                const el = document.getElementById(toastId);
+                if(el) {
+                    el.classList.remove('show');
+                    setTimeout(() => el.remove(), 300); // Wait for transition
+                }
+            }, 4000);
+        }
+
+        // Backward compatibility for existing code
+        function showAlert(msg, type = 'danger') {
+            showToast(msg, type);
+        }
+
+        // Theme Toggle Logic
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-bs-theme');
+            const icon = document.querySelector('#themeToggle i');
+            
+            if (currentTheme === 'dark') {
+                html.setAttribute('data-bs-theme', 'light');
+                localStorage.setItem('theme', 'light');
+                icon.className = 'fa fa-moon';
+            } else {
+                html.setAttribute('data-bs-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+                icon.className = 'fa fa-sun';
+            }
+        }
+        
+        // Initialize icon state on load
+        document.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem('theme') === 'dark') {
+                document.querySelector('#themeToggle i').className = 'fa fa-sun';
+            }
+        });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>
