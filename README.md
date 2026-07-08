@@ -33,3 +33,4 @@ This project detects malicious QR codes using Machine Learning and Flask.
 
 
 
+
