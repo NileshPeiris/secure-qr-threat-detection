@@ -6,16 +6,24 @@ Secure QR-Based Intelligent Threat Detection Framework using Python, Flask, Open
 
 This project detects malicious QR codes using Machine Learning and Flask.
 
-<<<<<<< HEAD
+## screenshots 
+
+### Login Page
+
+![Login Page](screenshots/login-page.png)
+
+### Dashboard
+
+![Dashboard](screenshots/dashboard.png)
+
+### QR Scanner
+
+![QR Scanner](screenshots/qr-scanner.png)
+
 ### Detection Result Safe
 ![Detection Result Safe](screenshots/detection-result_safe.png)
 
 ### Detection Result Malicious
 ![Detection Result Malicious](screenshots/detection-result_malicious.png)
+
 =======
-### Detection Result Safe
-![Detection Result Safe](screenshots/detection-result_safe.png)
-
-### Detection Result Malicious
-![Detection Result Malicious](screenshots/detection-result_malicious.png)
->>>>>>> some-branch-name
