@@ -24,6 +24,8 @@ This project detects malicious QR codes using Machine Learning and Flask.
 
 ![Detection Result Safe](screenshots/detection-result.png)
 
+### Detection Result Malicious
+
 
 
 
